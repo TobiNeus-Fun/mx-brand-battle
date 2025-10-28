@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MX Brand Review Battle — v2.1 (16:9 + Masks, Patched)</title>
+  <style>
+    :root{
+      --bg:#0b0e12;--fg:#e6e6e7;--muted:#a3a3a3;--accent:#00b3ff;--accent-strong:#00d0ff;
+      --green:#89c292;--red:#d27777;--frame:#11161f;--ink:#0b0f16;--gap:12px
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:system-ui,Roboto,Arial,Segoe UI,Helvetica,sans-serif;background:var(--bg);color:var(--fg);display:flex;min-height:100vh;line-height:1.35;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+
+    .btn{font-size:clamp(1rem,2vw,1.15rem);padding:14px 36px;border-radius:14px;background:transparent;color:var(--accent);border:2px solid var(--accent);cursor:pointer;transition:.2s ease all;letter-spacing:.05em;font-weight:800;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+    .btn:hover{background:rgba(0,179,255,.08);border-color:var(--accent-strong);color:var(--accent-strong);box-shadow:0 0 0 3px rgba(0,179,255,.25)}
+    .mt-sm{margin-top:12px}
+
+    .intro{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;text-align:center;gap:20px;width:100%;padding:24px}
+    .intro h1{font-size:clamp(2.6rem,6vw,4.4rem);font-weight:900;letter-spacing:.03em;margin:0}
+    .intro h2{font-size:clamp(1.6rem,4vw,2.4rem);color:var(--muted);font-weight:500;margin:0}
+
+    .game{display:none;flex-direction:column;align-items:center;gap:var(--gap);width:100%;max-width:1400px;margin:0 auto;padding:16px}
+
+    .banner{width:100%;display:flex;flex-direction:column;align-items:center;margin:2px 0 8px}
+    .timer{display:inline-flex;align-items:center;gap:8px;font-size:clamp(3.4rem,8.5vw,6.6rem);font-weight:700;line-height:1;color:var(--accent);margin-bottom:6px}
+    .headline{text-align:center;max-width:900px}
+    .headline-title{text-transform:uppercase;font-size:clamp(1.6rem,4vw,2.4rem);font-weight:800;margin:0;letter-spacing:.06em}
+    .subheadline{font-size:.98rem;color:var(--muted);margin:2px 0 0 0;letter-spacing:.015em}
+
+    .board{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap);width:100%}
+    .viewport{position:relative;aspect-ratio:16/9;background:var(--frame);border-radius:8px;overflow:hidden;border:1px solid #242a34;cursor:crosshair}
+    .viewport img{width:100%;height:100%;object-fit:contain;user-select:none;-webkit-user-drag:none}
+    .cover{position:absolute;inset:0;background:rgba(11,14,18,1);display:flex;align-items:center;justify-content:center;font-size:clamp(3.5rem,10vw,8rem);color:#f5f5f5;font-weight:800;letter-spacing:.06em;z-index:2}
+    .hidden{display:none !important}
+
+    #lvlInfo{font-size:1.1rem;font-weight:800;letter-spacing:.3px}
+
+    .result-modal{position:fixed;inset:0;background:rgba(0,0,0,.9);display:flex;align-items:center;justify-content:center;padding:20px;z-index:10}
+    .result-modal.hidden{display:none !important}
+    .result-card{width:min(520px,92vw);background:rgba(15,19,26,.85);backdrop-filter:blur(6px) saturate(120%);border:1px solid var(--accent);border-radius:10px;display:flex;flex-direction:column;align-items:center;gap:10px;padding:16px 14px;text-align:center;box-shadow:0 10px 24px rgba(0,0,0,.35)}
+    .result-title{font-size:1.8rem;font-weight:800;margin:0 0 2px}
+    .correct-title{color:var(--green)}
+    .incorrect-title{color:var(--red)}
+    .answer-text,.time-text,.score-text{font-size:1rem;margin:0}
+    .footer-note{font-size:.9rem;color:var(--muted);margin-top:8px}
+
+    .result-viewport{position:relative;width:100%;aspect-ratio:16/9;background:var(--ink);border-radius:8px;overflow:hidden;border:1px solid #242a34}
+    .result-viewport img{width:100%;height:100%;object-fit:contain}
+    .marker{position:absolute;transform:translate(-50%,-50%);pointer-events:none}
+    .marker-x{position:absolute;width:24px;height:24px}
+    .marker-x::before,.marker-x::after{content:"";position:absolute;left:50%;top:50%;width:2px;height:28px;background:var(--red);transform-origin:center}
+    .marker-x::before{transform:translate(-50%,-50%) rotate(45deg)}
+    .marker-x::after{transform:translate(-50%,-50%) rotate(-45deg)}
+  </style>
+</head>
+<body>
+  <section class="intro" id="intro">
+    <h1>MX Brand Review Battle</h1>
+    <h2>The Attention-to-Detail Challenge</h2>
+    <button id="beginBtn" type="button" class="btn">Start</button>
+  </section>
+
+  <section class="game" id="game">
+    <div class="banner">
+      <div class="timer"><span class="icon">⏱</span><span id="timerText">00:20</span></div>
+      <div class="headline">
+        <h3 class="headline-title">Spot the Difference</h3>
+        <p class="subheadline">Beware... you only got one chance 👀</p>
+      </div>
+    </div>
+
+    <div class="board">
+      <div class="viewport"><img id="leftImg" alt="Imagen A"><div class="cover" id="leftCover">?</div></div>
+      <div class="viewport"><img id="rightImg" alt="Imagen B"><div class="cover" id="rightCover">?</div></div>
+    </div>
+
+    <div id="lvlInfo">Level 1</div>
+    <button id="startBtn" type="button" class="btn mt-sm">Start Level</button>
+  </section>
+
+  <div class="result-modal hidden" id="resultModal">
+    <div id="resultContent" class="result-card"></div>
+  </div>
+
+  <script>
+  // ===== Helpers =====
+  const $ = s => document.querySelector(s);
+  const pad = n => String(n).padStart(2,'0');
+  const clamp = (n,min,max) => Math.min(max, Math.max(min, n));
+  const mmss = s => `${pad((s/60)|0)}:${pad(Math.max(0, s%60|0))}`;
+
+  // ===== Config niveles (rutas relativas: /img/ al lado de index.html) =====
+  const LEVELS = [
+    { name:'Level 1', imgA:'img/level1left.jpg', imgB:'img/level1right.jpg', mask:'img/level1_mask.png', answer:'Error in text' },
+    { name:'Level 2', imgA:'img/level2left.jpg', imgB:'img/level2right.jpg', mask:'img/level2_mask.png', answer:'Arrow color' },
+    { name:'Level 3', imgA:'img/level3left.jpg', imgB:'img/level3right.jpg', mask:'img/level3_mask.png', answer:'Rectangle stroke' },
+    { name:'Level 4', imgA:'img/level4left.jpg', imgB:'img/level4right.jpg', mask:'img/level4_mask.png', answer:'Background gradient color' },
+    { name:'Level 5', imgA:'img/level5left.jpg', imgB:'img/level5right.jpg', mask:'img/level5_mask.png', answer:'Grid opacity' },
+    { name:'Level 6', imgA:'img/level6.jpg',      imgB:'img/level6.jpg',      mask:null,                 answer:'There is no difference' }
+  ];
+
+  // ===== Estado & refs =====
+  const state = { level:0, clicks:0, found:false, raf:null, deadline:0, running:false };
+  const intro=$('#intro'), game=$('#game');
+  const leftImg=$('#leftImg'), rightImg=$('#rightImg');
+  const leftCover=$('#leftCover'), rightCover=$('#rightCover');
+  const lvlInfo=$('#lvlInfo'), timerText=$('#timerText');
+  const beginBtn=$('#beginBtn'), startBtn=$('#startBtn');
+  const resultModal=$('#resultModal'), resultContent=$('#resultContent');
+  const rightViewport = () => rightImg.closest('.viewport');
+
+  // ===== Carga robusta (no cuelga en error) =====
+  function loadImage(src){
+    return new Promise((resolve)=>{
+      const img = new Image();
+      img.onload  = () => resolve({ok:true, img});
+      img.onerror = () => { console.warn('No se pudo cargar:', src); resolve({ok:false, img:null}); };
+      img.src = src;
+    });
+  }
+
+  let maskCanvas = null, maskCtx = null, loadedMaskFor = -1;
+
+  async function ensureMaskLoaded(levelIdx){
+    const L = LEVELS[levelIdx];
+    if(!L.mask){ maskCanvas = maskCtx = null; loadedMaskFor = levelIdx; return; }
+    if(loadedMaskFor === levelIdx) return;
+
+    const r = await loadImage(L.mask);
+    if(!r.ok){
+      maskCanvas = maskCtx = null; loadedMaskFor = levelIdx; return;
+    }
+    const mImg = r.img;
+    maskCanvas = document.createElement('canvas');
+    maskCanvas.width = mImg.naturalWidth;
+    maskCanvas.height = mImg.naturalHeight;
+    maskCtx = maskCanvas.getContext('2d', { willReadFrequently:true });
+    maskCtx.drawImage(mImg, 0, 0);
+    loadedMaskFor = levelIdx;
+  }
+
+  // Mapea clic a píxeles reales de la imagen (con object-fit: contain)
+  function mapClickToImagePixel(evt, imgEl){
+    const rect = imgEl.getBoundingClientRect();
+    const iw = imgEl.naturalWidth, ih = imgEl.naturalHeight;
+    if(!iw || !ih) return null;
+
+    const cw = rect.width, ch = rect.height;
+    const imgAspect = iw / ih;
+    const contAspect = cw / ch;
+
+    let rw, rh, ox, oy;
+    if(imgAspect > contAspect){
+      rw = cw; rh = cw / imgAspect;
+      ox = rect.left; oy = rect.top + (ch - rh) / 2;
+    } else {
+      rh = ch; rw = ch * imgAspect;
+      ox = rect.left + (cw - rw) / 2; oy = rect.top;
+    }
+
+    const x = evt.clientX - ox;
+    const y = evt.clientY - oy;
+    if(x < 0 || y < 0 || x > rw || y > rh) return null;
+
+    return { x: Math.round((x / rw) * iw), y: Math.round((y / rh) * ih) };
+  }
+
+  // === Patched: prueba de impacto que soporta distinta resolución entre máscara e imagen
+  function hitTestMaskFromImageCoords(imgPx, imgPy, imgW, imgH){
+    if(!maskCtx || !maskCanvas) return false;
+    const mx = Math.round(imgPx * (maskCanvas.width  / imgW));
+    const my = Math.round(imgPy * (maskCanvas.height / imgH));
+    try{
+      const { data } = maskCtx.getImageData(mx, my, 1, 1);
+      return data[3] > 0;
+    }catch(e){
+      console.warn('No se pudo leer la máscara (¿CORS/tainted canvas?)', e);
+      return false;
+    }
+  }
+
+  function mapPct(evt, el){
+    const r = el.getBoundingClientRect();
+    return {x: clamp((evt.clientX - r.left)/r.width, 0, 1)*100, y: clamp((evt.clientY - r.top)/r.height, 0, 1)*100};
+  }
+
+  // ===== Lógica =====
+  async function setLevel(i){
+    state.level=i; state.clicks=0; state.found=false; state.running=false;
+    const L=LEVELS[i];
+
+    leftImg.src=L.imgA;
+    rightImg.src=L.imgB;
+
+    leftCover.classList.remove('hidden');
+    rightCover.classList.remove('hidden');
+    startBtn.disabled=true;
+    startBtn.classList.remove('hidden');
+
+    lvlInfo.textContent=L.name;
+    timerText.style.color='var(--accent)';
+    timerText.textContent=mmss(i===5?10:20);
+
+    // === Patched: esperamos realmente a ambas imágenes + máscara (con timeout de 3s)
+    const waitImg = (img) => new Promise(res=>{
+      if (img.complete && img.naturalWidth) return res();
+      img.onload = () => res();
+      img.onerror = () => res();
+    });
+
+    const ensureMask = ensureMaskLoaded(i);
+    const timeout = new Promise(res=>setTimeout(res, 3000));
+
+    await Promise.race([
+      (async()=>{ await Promise.all([waitImg(leftImg), waitImg(rightImg), ensureMask]); })(),
+      timeout
+    ]);
+
+    startBtn.disabled=false; // siempre habilitamos
+  }
+
+  function clearRaf(){ if(state.raf){ cancelAnimationFrame(state.raf); state.raf=null; } }
+
+  function startLevel(){
+    if(state.running) return;
+    state.running=true;
+    leftCover.classList.add('hidden'); rightCover.classList.add('hidden'); startBtn.classList.add('hidden');
+
+    const total = (state.level===5)?10:20;
+    const end = performance.now()+total*1000; state.deadline=end;
+
+    const tick = now => {
+      const left = Math.max(0, end-now); const s = Math.ceil(left/1000);
+      timerText.textContent = mmss(s);
+      timerText.style.color = (s<=5)?'var(--red)':'var(--accent)';
+      if(left<=0){ clearRaf(); finish(state.level===5? state.clicks===0 : false, true, null); return; }
+      state.raf = requestAnimationFrame(tick);
+    };
+    clearRaf(); state.raf=requestAnimationFrame(tick);
+  }
+
+  function verdict(seconds, ok){
+    if(state.level===5) return ok? 'Nice call trusting your judgement.' : 'Not everything needs a fix!';
+    if(!ok) return 'Not realizing the difference<br>is the best practice if we want to go bankrupt.';
+    const s = seconds|0;
+    if(s<=3) return 'You are an Olympian!';
+    if(s<=10) return 'You have to raise the Bar if we dont want to lose to Tractian!';
+    if(s<=15) return 'You have to work more efficiently!<br>This is a directive, not a suggestion!';
+    return 'Use AI to work Faster.';
+  }
+
+  function resultHTML(ok, L, elapsed, clickPct){
+    let html = `<div class='result-title ${ok?'correct-title':'incorrect-title'}'>${ok?'Correct':'Incorrect'}</div>`;
+    html += `<p class='answer-text'><strong>Answer:</strong> ${L.answer}</p>`;
+    html += `<div class='result-viewport'>
+               <img src='${L.imgB}' alt='Answer Image (B)'/>
+               ${L.mask ? `<img src='${L.mask}' alt='Mask' style='position:absolute;inset:0;opacity:.25;mix-blend-mode:screen'/>` : ''}
+               ${(!ok&&clickPct)?`<div class='marker marker-x' style='left:${clickPct.x}%;top:${clickPct.y}%;'></div>`:''}
+             </div>`;
+    if(state.level!==5 && ok) html += `<p class='time-text'>Time to spot it: ${elapsed}s</p>`;
+    html += `<div class='score-text'><em>${verdict(ok?+elapsed:null, ok)}</em></div>`;
+    html += (state.level!==5
+      ? `<button id='nextBtn' class='btn mt-sm'>Next Level</button><div class='footer-note'>Only press Next Level after you've shared your score with everyone.</div>`
+      : `<div class='footer-note'>Hope you had fun 🎉</div>`);
+    return html;
+  }
+
+  function showResult(ok, L, elapsed, clickPct){
+    resultContent.innerHTML = resultHTML(ok, L, elapsed, clickPct);
+    resultModal.classList.remove('hidden');
+    const n = document.querySelector('#nextBtn');
+    if(n) n.addEventListener('click', ()=>{ hideResult(); if(state.level<LEVELS.length-1) setLevel(state.level+1); }, {once:true});
+  }
+
+  function hideResult(){ resultModal.classList.add('hidden'); }
+
+  function finish(ok, timeout, clickPct){
+    state.found=true; clearRaf();
+    const total = (state.level===5)?10:20;
+    const elapsed = (total - Math.max(0,(state.deadline-performance.now())/1000)).toFixed(1);
+    showResult(ok, LEVELS[state.level], elapsed, clickPct);
+  }
+
+  // ===== Wire-up =====
+  beginBtn.addEventListener('click', ()=>{ intro.style.display='none'; game.style.display='flex'; setLevel(0); });
+  startBtn.addEventListener('click', startLevel);
+
+  // === Patched: escuchar en el contenedor con pointer events
+  // (así evitamos capas superpuestas y tenemos mejor precisión en móviles)
+  document.addEventListener('pointerdown', e => {
+    const rv = rightViewport();
+    if(!rv) return;
+    if(!rv.contains(e.target)) return; // sólo clicks en el viewport derecho
+    if(!state.running || state.found) return;
+    state.clicks++;
+
+    // Nivel "sin diferencia"
+    if(state.level===5){ finish(false,false,mapPct(e,rv)); return; }
+
+    const p = mapClickToImagePixel(e, rightImg);
+    const ok = p ? hitTestMaskFromImageCoords(p.x, p.y, rightImg.naturalWidth, rightImg.naturalHeight) : false;
+
+    finish(!!ok,false,mapPct(e,rv));
+  }, { passive: true });
+
+  resultModal.addEventListener('click', e=>{ if(e.target===resultModal) hideResult(); });
+
+  // Nota: Para evitar CORS/"tainted canvas", sirve este archivo desde un servidor local
+  // (p. ej. `python3 -m http.server 8000`) en vez de abrirlo con file://
+  </script>
+</body>
+</html>
+
+
